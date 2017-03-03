@@ -1,5 +1,5 @@
 "use strict";
-var Walls = [], Balls = [];
+var Walls = [], Balls = [], Users = [];
 
 function Ball(spd, position, direction) {
     var intId = false;
@@ -7,9 +7,9 @@ function Ball(spd, position, direction) {
     Object.defineProperty(this, 'speed', {
         get: function() {return spd},
         set : function(val) {
-        		this.stop();
+            this.stop();
             spd = val;
-       			this.start();
+       	    this.start();
         }
     });
     
@@ -36,7 +36,7 @@ function Ball(spd, position, direction) {
 			direction[0] ? position[0]++ : position[0]--;
             direction[1] ? position[1]++ : position[1]--;
             
-            draw(position[1], position[0], 'white');
+            draw(position[1], position[0], 'white', 'border');
 			
 			//Регулировка направления
 			function checkAll() {
@@ -60,6 +60,11 @@ function Ball(spd, position, direction) {
 					direction[1] = !direction[1];
 				}
 			}
+            if ( position[1] < 0 || position[1] > 9 ) {
+                alert('Конец игры');
+                this.stop();
+            }
+            this.speed --;
 		}
         
         intId = setInterval(intrval.bind(this), this.speed);
@@ -74,47 +79,47 @@ function Ball(spd, position, direction) {
 
 
 function User(speed, widthShield, HP, part) {
-    var wall, intId;
 
-    this.start = function() {
-        /*function intrval() {
-
-        }
-        intId = setInterval(intrval.bind(this), this.speed);*/
-    }
-
-    this.stop = function() {
-    	clearInterval(intId);
-    }
+    this.ready = false;
 
     Object.defineProperties(this, {
     	HP: {
     		get: function() {return HP},
     		set: function(val) {
     			HP = val;
-    			wall = new Wall(val, null, part);
+    			this.wall = new Wall(val, null, part);
     		}
     	},
     	speed: {
     		get: function() {return speed},
     		set: function(val) {
-    			this.stop();
-    			speed = val;
-    			this.start();
+                var spd;
+                switch(+val) {
+                    case 0:
+                    case 1: spd = 600; break;
+                    case 2: spd = 350;  break;
+                    case 3: spd = 200;  break;
+                }
+                this.shield.speed = speed = spd;
     		}
     	},
     	widthShield: {
     		get: function() {return widthShield},
     		set: function(val) {
-    			this.shield = new Shield(-1, [part ? part - 1 : part + 1], [5]);
-    			widthShield = val;
+                var width = [5];
+                
+                if (val == 2) width.push(4);
+                if (val == 3) width.push(4, 3);
+                
+                if (this.shield) this.shield.HP = -2;
+                this.shield = new Shield(Infinity, part ? part - 1 : part + 1, width, this.speed);
     		}
     	}
     });
 
     this.HP = HP;
-    this.speed = speed;
     this.widthShield = widthShield; 
+    this.speed = speed;
 }
 
 
@@ -123,14 +128,13 @@ function User(speed, widthShield, HP, part) {
 function Wall(HP, x, y) {
     
     this.draw = function () {
-        var color = HP == 3 ? 'rgba(255,255,255,0.7)' :
-        HP == 2 ? '#78705E' :
-        HP == 1 ? 'rgba(147, 108, 99, 0.76)':
-        HP == -1 ? 'blue' : 'none';
+        var color = HP == Infinity ? 'blue':
+            HP == 3 ? 'rgba(255,255,255,0.7)' :
+            HP == 2 ? '#78705E' :
+            HP == 1 ? 'rgba(147, 108, 99, 0.76)': null,
+            cls = HP > 0 ? 'border' : null;
         
-        x.forEach(function(item, i, x) {
-            draw(x[i], y[i], color, 'border');
-        });
+        draw(x, y, color, cls);
     }
 		
     this.setWall = function () {
@@ -168,6 +172,9 @@ function Wall(HP, x, y) {
                         Y.push(i);
                         X.push(y);
                     }
+                } else {
+                    Y = null;
+                    X = null;
                 }
             }
         }
@@ -179,6 +186,10 @@ function Wall(HP, x, y) {
 		get: function() {return HP},
 		set: function(val) {
             HP = val;
+            if (val < -1) {
+                this.y = null;
+                this.x = null;
+            }
             this.setWall();
             this.draw();
 		}
@@ -190,38 +201,43 @@ function Wall(HP, x, y) {
      
 }
 
-function Shield(HP, x, y) {
+function Shield(HP, x, y, speed) {
+    var ready = true;
 	Wall.call(this, HP, x, y);
-  
+    
+    this.speed = speed;
 	this.move = function(up) {
-        var maxY = Math.min.apply(null, this.y),
-            minY = Math.min.apply(null, this.y),
-            maxIndY = this.y.indexOf(maxY),
-            minIndY = this.y.indexOf(minY);
-        
-    	if (up) {
-            if ( !checkBlock(minY - 1, x[minIndY]) ) {
-                for (var i = 0; i < this.y.length; i++) {
-                    draw(this.x[i], this.y[i]);
-                    this.y[i] -= 1;
-                    this.draw(this.x[i], this.y[i] - 1);
+        if (ready) {
+            var maxY = Math.max.apply(null, this.y),
+                minY = Math.min.apply(null, this.y),
+                maxIndY = this.y.indexOf(maxY),
+                minIndY = this.y.indexOf(minY);
+            
+        	if (up) {
+                if ( !checkBlock(minY - 1, x[minIndY]) ) {
+                    for (var i = this.y.length; i--;) {
+                        draw(this.x[i], this.y[i]);
+                        this.y[i] -= 1;
+                        this.draw();
+                    }
                 }
-            }
-    	} else {
-            if ( !checkBlock(maxY + 1, x[maxIndY]) ) {
-                for (var i = 0; i < this.y.length; i++) {
-                    draw(this.x[i], this.y[i]);
-                    this.y[i] += 1;
-                    this.draw(this.x[i], this.y[i] + 1);
+        	} else {
+                if ( !checkBlock(maxY + 1, x[maxIndY]) ) {
+                    for (var i = this.y.length; i--;) {
+                        draw(this.x[i], this.y[i]);
+                        this.y[i] += 1;
+                        this.draw();
+                    }
                 }
-            }
-    	}
+        	}
+            ready = false;
+            setTimeout(function() {ready = true}, this.speed)
+        }
     }
 }
 
 //AutoFunctions
-var User1 = new User(1, 1, 1, 0),
-    User2 = new User(1, 1, 1, 9);
+Users.push(new User(1, 1, 1, 0), new User(1, 1, 1, 9));
 	
 //Kontroller
 $('body').on('keydown',function(e){
@@ -229,20 +245,20 @@ $('body').on('keydown',function(e){
     switch(e.which) {
             
         case 87:
-            User1.shield.move(1);
+            Users[0].shield.move(1);
         break;
             
         case 83:
-            User1.shield.move(null);
+            Users[0].shield.move(null);
         break;
             
             
         case 38:
-            User2.shield.move(1);
+            Users[1].shield.move(1);
         break;
             
         case 40:
-            User2.shield.move(null);
+            Users[1].shield.move(null);
         break;
     }
 
@@ -254,7 +270,7 @@ $('input[type="number"]').on('change', function(e){
         val = $(this).val(),
 		cls = $(this).attr('class'),
         points = $(this).siblings('.countPoint').text(),
-        userId = $(this).parent().attr('class')[7];
+        userId = +$(this).parent().attr('class')[7];
     
 	if ( (val > 3 || val < 1) ) {
         $(this).parent().find('input[type="number"]').attr('value', 1);
@@ -266,57 +282,89 @@ $('input[type="number"]').on('change', function(e){
             if (points > 0) {
                 $(this).attr( 'value', val );
                 $(this).siblings('.countPoint').text(--points);
-				userChange();
+				userChange(val);
             } else {
                 $(this).attr('value', attr );
                 $(this).val(attr);
-				userChange();
+				userChange(attr);
             }
         } else {
             $(this).attr( 'value', val );
             $(this).siblings('.countPoint').text(++points);
-			userChange();			
+			userChange(val);			
         }
     }
 	
-    function userChange() {
-		if (userId == 1) {
-			User1[cls] = val;
-		} else {
-			User2[cls] = val;
-		}
+    function userChange(val) {
+        Users[userId][cls] = val;
 	}
 });
 
 $('.confirm').click(function() {
-    var userId = $(this).parent().attr('class')[7];
+    var userId = +$(this).parent().attr('class')[7];
     $(this).parent().find('input[type="number"]').attr('disabled', 1);
     
+    Users[userId].ready = true;
     
-    Balls.push( new Ball(300, [2, 4], [1, 1]) );
-		Balls[Balls.length-1].start();
+    if ( Users.every(isReady) ) {
+        Balls.push( new Ball(500, [2, 4], [1, 1]) );
+        Balls[Balls.length-1].start();
+    }
+
+    function isReady(User) {
+        return User.ready;
+    }
 });
 
 function checkBlock(y, x) {
     if ( !$('tr').is('[row="a'+ y +'"]') ||
-        $('tr[row="a'+ y +'"] > td[col="'+ x +'"]').hasClass('border') 
-		||$('td[col="'+ x +'"]').is('[col="9"]') || $('td[col="'+ x +'"]').is('[col="0"]') 
-		) {return true;}
+        $('tr[row="a'+ y +'"] > td[col="'+ x +'"]').hasClass('border')) {
+        
+        Users.forEach(function(User, i) {
+            var X = User.wall.x, Y = User.wall.y;
+            
+            for (var i = X.length ; i--; ) {
+                if ( X[i] == x && Y[i] == y ) {
+                    User.wall.HP -= 1;
+                    break;
+                }
+            }
+        });
+        
+        Walls.forEach(function(Wall, i) {
+            var X = Wall.x, Y = Wall.y;
+            
+            for (var i = X.length ; i--; ) {
+                if ( X[i] == x && Y[i] == y ) {
+                    Wall.HP -= 1;
+                    break;
+                }
+            }
+        });
+        
+        return true;
+    }
 }
 
 //View
 function draw(x, y, col, cls){
-    var blks = $('tr[row="a'+ y +'"] > td[col="'+ x +'"]');
-        
-    if (cls) blks.attr('class', cls);
-    else blks.removeAttr('class');
-    
-	if (col) {
-		blks.css({background: col});
-	} else {
-		blks.removeAttr('style');
-	}
-    
-    
-}
 
+    if (Array.isArray(x) && Array.isArray(y)) {
+        x.forEach(function(item, i) {
+            drawBlock(x[i], y[i]);
+        });
+    } else {
+        drawBlock(x, y);
+    }
+
+    function drawBlock(x, y) {
+        var blk = $('tr[row="a'+ y +'"] > td[col="'+ x +'"]');
+
+        if (cls) blk.attr('class', cls);
+        else blk.removeAttr('class');
+        
+        if (col) blk.css({background: col});
+        else blk.removeAttr('style');
+
+    } 
+}
