@@ -1,0 +1,35 @@
+td{
+    border:1px solid white;
+    width:20px;
+    height:20px;
+}
+html{
+    background:black;
+}
+tr[row] td:nth-child(2), tr[row] td:nth-last-child(2) {
+    background:  rgba(70,255,255,0.7);
+}
+.wall {
+    background: grey;
+}
+.player *{
+    min-width: 100px;
+    outline: 1px dashed rgb(100,160,200);
+    text-align: center;
+}
+
+.info{
+    height: 20px;
+    background: rgba(255,255,255,.5);
+}
+.info-block{
+    height: 40px;
+    background: rgba(100,160,200,.7);
+}
+
+fieldset legend, label{
+    color: white;
+}
+.playZone {
+     background:  rgba(70,255,255,0.7);
+}

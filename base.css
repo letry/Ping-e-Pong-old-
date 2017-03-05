@@ -1,0 +1,31 @@
+.startButtons input{
+    float: left;
+    clear: both;
+}
+fieldset {
+    max-width: 500px;
+    margin: 1% auto;
+    text-align: center;
+}
+.inputWrap {
+    overflow: hidden;
+    clear: both;
+}
+fieldset .inputWrap label{
+    float: left;
+}
+.submit {
+    margin-top: 5%;
+}
+.main {
+    margin-top: 3%;
+    display: flex;
+    justify-content: space-around;
+}
+fieldset .inputWrap input, select{
+    float: right;
+    width: 150px;
+}
+.startButtons{
+    display: none;
+}

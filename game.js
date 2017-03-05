@@ -1,8 +1,8 @@
 "use strict";
-var Walls = [], Balls = [], Users = [];
+var Walls = [], Balls = [], Users = [], score = 0;
 
-function Ball(spd, position, direction) {
-    var intId = false;
+function Ball(spd, pwr, position, direction) {
+    var intId;
     
     Object.defineProperty(this, 'speed', {
         get: function() {return spd},
@@ -12,6 +12,9 @@ function Ball(spd, position, direction) {
        	    this.start();
         }
     });
+    
+    this.getPosition = position;
+    this.getDirection = direction;
     
 	this.start = function() {
         
@@ -26,7 +29,7 @@ function Ball(spd, position, direction) {
             direction[0] ? Y++ : Y--;
             direction[1] ? X++ : X--;
 			
-			while ( checkBlock(Y, X) ) {
+			while ( checkBlock(Y, X, pwr) ) {
 				revDir(1, 1);
 				direction[0] ? Y++ : Y--;
 				direction[1] ? X++ : X--;
@@ -41,15 +44,16 @@ function Ball(spd, position, direction) {
 			//Регулировка направления
 			function checkAll() {
 				
-				if ( checkBlock(Y+1, X) || checkBlock(Y-1, X) ) {
+				if ( checkBlock(Y+1, X, pwr) || checkBlock(Y-1, X, pwr) ) {
 					revDir(1);
 				}
 				
-				if ( checkBlock(Y, X+1) || checkBlock(Y, X-1) ) {
+				if ( checkBlock(Y, X+1, pwr) || checkBlock(Y, X-1, pwr) ) {
 					revDir();
 				}
 				
 			}
+            
 			//Инверсия направления
 			function revDir(y) {
 				if ( arguments[1] ) {
@@ -60,14 +64,14 @@ function Ball(spd, position, direction) {
 					direction[1] = !direction[1];
 				}
 			}
-            if ( position[1] < 0 || position[1] > 9 ) {
-                alert('Конец игры');
-                this.stop();
-            }
-            this.speed --;
-		}
+
+            //Изменение скорости
+            if (spd > 150) spd --;
+            ++score;
+            
+		};
         
-        intId = setInterval(intrval.bind(this), this.speed);
+        intId = setInterval(intrval.bind(this), spd);
 	};
 	this.stop = function(){
 		clearInterval(intId);
@@ -81,13 +85,18 @@ function Ball(spd, position, direction) {
 function User(speed, widthShield, HP, part) {
 
     this.ready = false;
+    this.part = part;
 
     Object.defineProperties(this, {
     	HP: {
     		get: function() {return HP},
     		set: function(val) {
     			HP = val;
-    			this.wall = new Wall(val, null, part);
+                if (part) {
+                    this.wall = Walls[0] = new Wall(val, null, part);
+                } else {
+                    this.wall = Walls[1] = new Wall(val, null, part);
+                }
     		}
     	},
     	speed: {
@@ -95,7 +104,7 @@ function User(speed, widthShield, HP, part) {
     		set: function(val) {
                 var spd;
                 switch(+val) {
-                    case 0:
+                    case 0: spd = Infinity; break;
                     case 1: spd = 600; break;
                     case 2: spd = 350;  break;
                     case 3: spd = 200;  break;
@@ -111,7 +120,7 @@ function User(speed, widthShield, HP, part) {
                 if (val == 2) width.push(4);
                 if (val == 3) width.push(4, 3);
                 
-                if (this.shield) this.shield.HP = -2;
+                if (this.shield) this.shield.HP = 0;
                 this.shield = new Shield(Infinity, part ? part - 1 : part + 1, width, this.speed);
     		}
     	}
@@ -186,7 +195,7 @@ function Wall(HP, x, y) {
 		get: function() {return HP},
 		set: function(val) {
             HP = val;
-            if (val < -1) {
+            if (val < 1) {
                 this.y = null;
                 this.x = null;
             }
@@ -236,6 +245,10 @@ function Shield(HP, x, y, speed) {
     }
 }
 
+
+
+
+
 //AutoFunctions
 Users.push(new User(1, 1, 1, 0), new User(1, 1, 1, 9));
 	
@@ -264,7 +277,7 @@ $('body').on('keydown',function(e){
 
 });
 
-$('input[type="number"]').on('change', function(e){
+$('.startButtons input[type="number"]').on('change', function(e){
 
     var attr = $(this).attr('value'),
         val = $(this).val(),
@@ -307,7 +320,7 @@ $('.confirm').click(function() {
     Users[userId].ready = true;
     
     if ( Users.every(isReady) ) {
-        Balls.push( new Ball(500, [2, 4], [1, 1]) );
+        Balls.push( new Ball(180, 1, [2, 4], [1, 1]) );
         Balls[Balls.length-1].start();
     }
 
@@ -316,27 +329,34 @@ $('.confirm').click(function() {
     }
 });
 
-function checkBlock(y, x) {
+function checkBlock(y, x, pwr) {
+    ($('body') instanceof $)
     if ( !$('tr').is('[row="a'+ y +'"]') ||
         $('tr[row="a'+ y +'"] > td[col="'+ x +'"]').hasClass('border')) {
         
-        Users.forEach(function(User, i) {
-            var X = User.wall.x, Y = User.wall.y;
-            
-            for (var i = X.length ; i--; ) {
-                if ( X[i] == x && Y[i] == y ) {
-                    User.wall.HP -= 1;
-                    break;
-                }
+        //Проверка победы
+        if ( x < Users[0].part || x > Users[1].part ) {
+                
+            if ( x < Users[0].part ) {
+                alert('Конец игры. Победил игрок 2 со счетом '+score);
             }
-        });
-        
+            if ( x > Users[1].part ) {
+                alert('Конец игры. Победил игрок 1 со счетом '+score);
+            }
+            
+            Balls.forEach(function(Ball) {
+                Ball.stop();
+            });
+                
+        }
+             
+        //Удар стен
         Walls.forEach(function(Wall, i) {
             var X = Wall.x, Y = Wall.y;
             
             for (var i = X.length ; i--; ) {
                 if ( X[i] == x && Y[i] == y ) {
-                    Wall.HP -= 1;
+                    Wall.HP -= pwr;
                     break;
                 }
             }
@@ -358,10 +378,11 @@ function draw(x, y, col, cls){
     }
 
     function drawBlock(x, y) {
+        
         var blk = $('tr[row="a'+ y +'"] > td[col="'+ x +'"]');
 
         if (cls) blk.attr('class', cls);
-        else blk.removeAttr('class');
+        else blk.removeClass('border');
         
         if (col) blk.css({background: col});
         else blk.removeAttr('style');
