@@ -3,7 +3,14 @@ var Walls = [], Balls = [], Users = [], score = 0;
 
 function Ball(spd, pwr, position, direction) {
     var intId;
-    
+
+    Object.defineProperty(this, 'pwr', {
+        get: function() {return pwr},
+        set : function(val) {
+            pwr = val;
+        }
+    });
+
     Object.defineProperty(this, 'speed', {
         get: function() {return spd},
         set : function(val) {
@@ -66,7 +73,7 @@ function Ball(spd, pwr, position, direction) {
 			}
 
             //Изменение скорости
-            if (spd > 150) spd --;
+            if (spd > 100) spd --;
             ++score;
             
 		};
@@ -115,13 +122,14 @@ function User(speed, widthShield, HP, part) {
     	widthShield: {
     		get: function() {return widthShield},
     		set: function(val) {
-                var width = [5];
+                var center = Math.floor(settings.height/2), width = [];
                 
-                if (val == 2) width.push(4);
-                if (val == 3) width.push(4, 3);
+                for (;--val + 1;){
+                    width.push(++center);
+                }   
                 
                 if (this.shield) this.shield.HP = 0;
-                this.shield = new Shield(Infinity, part ? part - 1 : part + 1, width, this.speed);
+                this.shield = new Shield(Infinity, part ? part - settings.playZone : part + settings.playZone, width, this.speed);
     		}
     	}
     });
@@ -172,12 +180,12 @@ function Wall(HP, x, y) {
                     Y.push(y);
                     X.push(x);
                 } else if (x || x === 0) {
-                    for (var i = 0; i < 10; i++) {
+                    for (var i = 0; i <= settings.width; i++) {
                         Y.push(x);
                         X.push(i);
                     }
                 } else if (y || y === 0) {
-                    for (var i = 0; i < 10; i++) {
+                    for (var i = 0; i <= settings.height; i++) {
                         Y.push(i);
                         X.push(y);
                     }
@@ -215,32 +223,49 @@ function Shield(HP, x, y, speed) {
 	Wall.call(this, HP, x, y);
     
     this.speed = speed;
-	this.move = function(up) {
+	this.move = function(dir) {
         if (ready) {
             var maxY = Math.max.apply(null, this.y),
                 minY = Math.min.apply(null, this.y),
                 maxIndY = this.y.indexOf(maxY),
                 minIndY = this.y.indexOf(minY);
             
-        	if (up) {
-                if ( !checkBlock(minY - 1, x[minIndY]) ) {
+        	if (dir === 1 || !dir) {
+                var Y = !dir ? maxY + 1 : minY - 1,
+                    indx = !dir ? maxIndY : minIndY,
+                    dir = !dir ? 1 : -1;
+                
+                if ( !checkBlock(Y, this.x[indx] || x) ) {
                     for (var i = this.y.length; i--;) {
                         draw(this.x[i], this.y[i]);
-                        this.y[i] -= 1;
-                        this.draw();
+                        this.y[i] += dir;
                     }
+                    this.draw();
                 }
         	} else {
-                if ( !checkBlock(maxY + 1, x[maxIndY]) ) {
-                    for (var i = this.y.length; i--;) {
-                        draw(this.x[i], this.y[i]);
-                        this.y[i] += 1;
-                        this.draw();
+                if(dir === -2 || dir === 2) {
+                    dir = dir === 2 ? 1 : -1;
+                    
+                    for (var i = this.y.length - 1; i > -1; i--) {
+                        if ( isntPzone(this.x[i] + dir, this.y[i]) ||
+                            checkBlock(this.y[i], this.x[i] + dir)) break;
+                        if (i == 0) {
+                            for (var l = this.y.length - 1; l > -1; l--) {
+                                draw(this.x[l], this.y[l]);
+                                this.x[l] += dir;
+                            }      
+                            this.draw();
+                        }
                     }
-                }
-        	}
+        	   }
+            }
+            
+            
             ready = false;
             setTimeout(function() {ready = true}, this.speed)
+        }
+        function isntPzone(x, y) {
+            return !$('tr[row="a'+ y +'"] > td[col="'+ x +'"]').hasClass('playZone');
         }
     }
 }
@@ -250,7 +275,7 @@ function Shield(HP, x, y, speed) {
 
 
 //AutoFunctions
-Users.push(new User(1, 1, 1, 0), new User(1, 1, 1, 9));
+Users.push(new User(1, 1, 1, 0), new User(1, 1, 1, settings.width));
 	
 //Kontroller
 $('body').on('keydown',function(e){
@@ -260,18 +285,30 @@ $('body').on('keydown',function(e){
         case 87:
             Users[0].shield.move(1);
         break;
-            
         case 83:
             Users[0].shield.move(null);
+        break;
+
+        case 65:
+            Users[0].shield.move(-2);
+        break;
+        case 68:
+            Users[0].shield.move(2);
         break;
             
             
         case 38:
             Users[1].shield.move(1);
         break;
-            
         case 40:
             Users[1].shield.move(null);
+        break;
+
+        case 37:
+            Users[1].shield.move(-2);
+        break;
+        case 39:
+            Users[1].shield.move(2);
         break;
     }
 
@@ -320,7 +357,9 @@ $('.confirm').click(function() {
     Users[userId].ready = true;
     
     if ( Users.every(isReady) ) {
-        Balls.push( new Ball(180, 1, [2, 4], [1, 1]) );
+        Balls.push( new Ball(settings.speedBall, settings.powerBall,
+         [Math.floor(settings.height/2), Math.floor(settings.width/2)],
+          [1, 1]) );
         Balls[Balls.length-1].start();
     }
 
@@ -330,11 +369,9 @@ $('.confirm').click(function() {
 });
 
 function checkBlock(y, x, pwr) {
-    ($('body') instanceof $)
-    if ( !$('tr').is('[row="a'+ y +'"]') ||
-        $('tr[row="a'+ y +'"] > td[col="'+ x +'"]').hasClass('border')) {
-        
-        //Проверка победы
+    var pwr = pwr || 0;
+    
+    //Проверка победы
         if ( x < Users[0].part || x > Users[1].part ) {
                 
             if ( x < Users[0].part ) {
@@ -349,6 +386,10 @@ function checkBlock(y, x, pwr) {
             });
                 
         }
+
+    //($('body') instanceof $)
+    if ( !$('tr').is('[row="a'+ y +'"]') ||
+        $('tr[row="a'+ y +'"] > td[col="'+ x +'"]').hasClass('border')) {
              
         //Удар стен
         Walls.forEach(function(Wall, i) {
@@ -381,7 +422,7 @@ function draw(x, y, col, cls){
         
         var blk = $('tr[row="a'+ y +'"] > td[col="'+ x +'"]');
 
-        if (cls) blk.attr('class', cls);
+        if (cls) blk.addClass(cls);
         else blk.removeClass('border');
         
         if (col) blk.css({background: col});

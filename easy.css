@@ -6,9 +6,6 @@ td{
 html{
     background:black;
 }
-tr[row] td:nth-child(2), tr[row] td:nth-last-child(2) {
-    background:  rgba(70,255,255,0.7);
-}
 .wall {
     background: grey;
 }
