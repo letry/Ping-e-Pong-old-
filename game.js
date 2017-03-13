@@ -1,61 +1,132 @@
 "use strict";
-var Walls = [], Balls = [], Users = [], score = 0;
+var Walls = [], Balls = [], Users = [], Bonuses = [], contBonus, score = 0;
+
+Object.defineProperties(Balls, {
+    create: {
+        enumerable: false,
+        get: function() {return 0},
+        set: function(val) {
+                var lastBall = this[this.length - 1],
+                    lBspd = lastBall.spd,
+                    lBpwr = lastBall.pwr;
+
+                for (let i = val + 1; --i;) {
+                    let lBpos = lastBall.getPosition,
+                        lBdir = lastBall.getDirection;
+                    
+                    if (i == val) revDir(1);
+                    else if (i == val-1) revDir(0,1);
+                    else if (i == val-2) revDir(1,0);
+                    
+                    lBdir[0] ? ++lBpos[0] : --lBpos[0];
+                    lBdir[1] ? ++lBpos[1] : --lBpos[1];
+                    
+                    this.push( new Ball(lBspd, lBpwr, lBpos, lBdir) );
+                    this[this.length-1].start();
+                    
+                    function revDir(y) {
+                        if ( arguments[1] ) {
+                            lBdir[0] = !lBdir[0];
+                            lBdir[1] = !lBdir[1];
+                        } else {
+                            y ? lBdir[0] = !lBdir[0] :
+                            lBdir[1] = !lBdir[1];
+                        }
+                    }
+                }
+            }
+        },
+        spd: {
+            enumerable: false,
+            get: function() {return 0},
+            set: function(val) {
+                for (let i = 0; i < this.length ; ++i) {
+                    this[i].spd += val * 50;
+                } 
+            }
+        },
+        pwr: {
+            enumerable: false,
+            get: function() {return 0},
+            set: function(val) {
+                for (let i = 0; i < this.length ; ++i) {
+                    this[i].pwr += val;
+                }
+            }
+        },
+        remove: {
+            enumerable: false,
+            get: function() {return 0},
+            set: function(val) {
+                var length = this.length,
+                    lastBall;
+                         
+                for (let i = length; this.length > 1 && this.length > length - val; --i) {
+                    this[i].stop();
+                    draw(this[i].x, this[i].y);
+                    --this.length;
+                }
+                
+            }
+        }
+});
+
+Object.defineProperty(Walls, 'create', {
+    enumerable: false,
+    get: function() {return 0},
+    set: function(val) {
+        var emptyBlocks = $('td[col]:not([class],[style])'),
+            randBlock = getRandom(0, emptyBlocks.length),
+            randX = +emptyBlocks[randBlock].attributes[0].value,
+            randY = +emptyBlocks[randBlock].parentNode.attributes[0].value.slice(1);
+        
+            this.push( new Wall(val, randX, randY) );
+        }
+});
+
+
 
 function Ball(spd, pwr, position, direction) {
     var intId;
-
-    Object.defineProperty(this, 'pwr', {
-        get: function() {return pwr},
-        set : function(val) {
-            pwr = val;
-        }
-    });
-
-    Object.defineProperty(this, 'speed', {
-        get: function() {return spd},
-        set : function(val) {
-            this.stop();
-            spd = val;
-       	    this.start();
-        }
-    });
     
+    this.pwr = pwr;
+    this.spd = spd;
     this.getPosition = position;
     this.getDirection = direction;
     
-	this.start = function() {
-        
-		function intrval() {
+	this.start = function intrval() {
 			var Y = position[0],
-                X = position[1];
+                X = position[1],
+                clr = 305 - this.pwr * 50,
+                color = "rgb("+clr+", 255, 255)";
 			
 			draw(position[1], position[0]);
      
-            checkAll();
+            checkAll.call(this);
 			
             direction[0] ? Y++ : Y--;
             direction[1] ? X++ : X--;
 			
-			while ( checkBlock(Y, X, pwr) ) {
+			while ( checkBlock(Y, X, this.pwr) ) {
 				revDir(1, 1);
 				direction[0] ? Y++ : Y--;
 				direction[1] ? X++ : X--;
-				checkAll();
+				checkAll.call(this);
 			}
             
 			direction[0] ? position[0]++ : position[0]--;
             direction[1] ? position[1]++ : position[1]--;
             
-            draw(position[1], position[0], 'white', 'border');
+            draw(position[1], position[0], color, 'border');
 			
 			//Регулировка направления
 			function checkAll() {
 				
-				if ( checkBlock(Y+1, X, pwr) || checkBlock(Y-1, X, pwr) ) {
+				if ( checkBlock(Y+1, X, this.pwr) || checkBlock(Y-1, X, this.pwr) ) {
 					revDir(1);
 				}
 				
-				if ( checkBlock(Y, X+1, pwr) || checkBlock(Y, X-1, pwr) ) {
+				if ( checkBlock(Y, X+1, this.pwr) || checkBlock(Y, X-1, this.pwr) ) {
 					revDir();
 				}
 				
@@ -73,49 +144,47 @@ function Ball(spd, pwr, position, direction) {
 			}
 
             //Изменение скорости
-            if (spd > 100) spd --;
+            if (this.spd > settings.speedBall / 3) this.spd --;
             ++score;
             
-		};
-        
-        intId = setInterval(intrval.bind(this), spd);
+        intId = setTimeout(intrval.bind(this), this.spd);
 	};
 	this.stop = function(){
-		clearInterval(intId);
+		clearTimeout(intId);
 	};
 }
-
-
-
-
 
 function User(speed, widthShield, HP, part) {
 
     this.ready = false;
-    this.part = part;
 
     Object.defineProperties(this, {
+        part : {
+            value : part,
+            writable : false,
+            configurable : false
+        },
     	HP: {
     		get: function() {return HP},
     		set: function(val) {
+                var indx = part ? 1 : 0;
     			HP = val;
-                if (part) {
-                    this.wall = Walls[0] = new Wall(val, null, part);
+                if (settings.multiWall) {
+                    Walls[indx] = [];
+                    for (var i = settings.height; i >= 0 ; --i) {
+                        Walls[indx].push( new Wall(val, part, i) );
+                    }
                 } else {
-                    this.wall = Walls[1] = new Wall(val, null, part);
+                    Walls[indx] = new Wall(val, null, part);
                 }
     		}
     	},
     	speed: {
-    		get: function() {return speed},
+    		get: function() {
+                return (settings.SpeedShield - speed) / (settings.SpeedShield / 6);
+            },
     		set: function(val) {
-                var spd;
-                switch(+val) {
-                    case 0: spd = Infinity; break;
-                    case 1: spd = 600; break;
-                    case 2: spd = 350;  break;
-                    case 3: spd = 200;  break;
-                }
+                var spd = settings.SpeedShield - val * (settings.SpeedShield / 6);
                 this.shield.speed = speed = spd;
     		}
     	},
@@ -124,12 +193,15 @@ function User(speed, widthShield, HP, part) {
     		set: function(val) {
                 var center = Math.floor(settings.height/2), width = [];
                 
-                for (;--val + 1;){
-                    width.push(++center);
-                }   
+                if (val > 0) {
+                    for (;--val + 1;){
+                        width.push(++center);
+                    }   
+
+                    if (this.shield) this.shield.HP = 0;
+                    this.shield = new Shield(Infinity, part ? part - settings.playZone : part + settings.playZone, width, this.speed);
+                }
                 
-                if (this.shield) this.shield.HP = 0;
-                this.shield = new Shield(Infinity, part ? part - settings.playZone : part + settings.playZone, width, this.speed);
     		}
     	}
     });
@@ -139,14 +211,11 @@ function User(speed, widthShield, HP, part) {
     this.speed = speed;
 }
 
-
-
-
 function Wall(HP, x, y) {
     
     this.draw = function () {
         var color = HP == Infinity ? 'blue':
-            HP == 3 ? 'rgba(255,255,255,0.7)' :
+            HP > 2 && HP < Infinity ? 'rgba(255,255,255,0.7)' :
             HP == 2 ? '#78705E' :
             HP == 1 ? 'rgba(147, 108, 99, 0.76)': null,
             cls = HP > 0 ? 'border' : null;
@@ -270,13 +339,93 @@ function Shield(HP, x, y, speed) {
     }
 }
 
+function Bonus(x, y, conf) {
+    var cls = contBonus[conf[0]][conf[1]][conf[2]].getClass(),
+        val = contBonus[conf[0]][conf[1]][conf[2]].getVal(),
+        bgs = getBackgrounds(cls);
+    
+    $('tr[row="a'+y+'"] > td[col="'+x+'"]')
+        .css({'background':bgs, 'background-size': 'cover', 'background-repeat': 'round'});
+    
+    this.x = x;
+    this.y = y;
+    this.activate = function(part) {
+        var target = val[2];
+        
+        if (val[2][0] instanceof User) {
+            if ((part && val[0] == 1) || (!part && val[0] == -1)) {
+                target = val[2][1];
+            } else {
+                target = val[2][0];
+            }
+        }
+        
+        target[val[1]] += val[0];
+    }
+    
+    function getBackgrounds(cls) {
+        var clas = [];
+        for (let i=0; i<cls.length; ++i) {
+            clas.push('url(img/'+cls[i]+'.png)')
+        }
+        return clas.join(',');
+    }
+    
+}
 
+Bonus.activate = function (x, y, part) {
+    Bonuses.forEach(function(item, i) {
+        if (item.x == x && item.y == y) {
+            item.activate(part);
+            Bonuses.splice(i, 1);
+        }
+    });
+}
 
-
+Bonus.runCreater = function bonusCreater (intrval) {
+    var playZoneBlocks = $('td[class="playZone"]'),
+        randBlock = getRandom(0, playZoneBlocks.length),
+        randX = +playZoneBlocks[randBlock].attributes[0].value,
+        randY = +playZoneBlocks[randBlock].parentNode.attributes[0].value.slice(1),
+        
+        randClass = getRandom(0, [contBonus.length]),
+        randType =  getRandom(0, [contBonus[randClass].length] ),
+        randAct =   getRandom(0 ,[contBonus[randClass][randType].length]);
+    
+    Bonuses.push( new Bonus(randX, randY, [randClass, randType, randAct]) );
+    
+    setTimeout(bonusCreater, settings.bonusСhance);
+}
 
 //AutoFunctions
 Users.push(new User(1, 1, 1, 0), new User(1, 1, 1, settings.width));
-	
+
+contBonus = new BonusClass('bonus', null);
+
+contBonus.push(new BonusClass('Ball', Balls),
+               new BonusClass('pWall', [Users[0], Users[1]]),
+               new BonusClass('Shield', [Users[0], Users[1]]),
+               new BonusClass('Wall', Walls));
+
+contBonus[0].push(new BonusClass('Speeds', 'spd'),
+                  new BonusClass('Power', 'pwr'),
+                  new BonusClass('Multi', 'create'));
+
+contBonus[1].push(new BonusClass('Health', 'HP'));
+
+contBonus[2].push(new BonusClass('Speeds', 'speed'),
+                  new BonusClass('Widths', 'widthShield'));
+
+contBonus[3].push(new BonusClass('Set', 'create'));
+
+actions.call(contBonus[0][0]);
+actions.call(contBonus[0][1]);
+actions.call(contBonus[0][2], 1);
+actions.call(contBonus[1][0]);
+actions.call(contBonus[2][0]);
+actions.call(contBonus[2][1]);
+actions.call(contBonus[3][0], 1);
+
 //Kontroller
 $('body').on('keydown',function(e){
 
@@ -316,8 +465,8 @@ $('body').on('keydown',function(e){
 
 $('.startButtons input[type="number"]').on('change', function(e){
 
-    var attr = $(this).attr('value'),
-        val = $(this).val(),
+    var attr = +$(this).attr('value'),
+        val = +$(this).val(),
 		cls = $(this).attr('class'),
         points = $(this).siblings('.countPoint').text(),
         userId = +$(this).parent().attr('class')[7];
@@ -352,7 +501,7 @@ $('.startButtons input[type="number"]').on('change', function(e){
 
 $('.confirm').click(function() {
     var userId = +$(this).parent().attr('class')[7];
-    $(this).parent().find('input[type="number"]').attr('disabled', 1);
+    $(this).parent().find('input').attr('disabled', 1);
     
     Users[userId].ready = true;
     
@@ -361,6 +510,7 @@ $('.confirm').click(function() {
          [Math.floor(settings.height/2), Math.floor(settings.width/2)],
           [1, 1]) );
         Balls[Balls.length-1].start();
+        Bonus.runCreater(settings.bonusСhance);
     }
 
     function isReady(User) {
@@ -384,26 +534,36 @@ function checkBlock(y, x, pwr) {
             Balls.forEach(function(Ball) {
                 Ball.stop();
             });
-                
+            throw 'Игра окончена';
         }
 
-    //($('body') instanceof $)
     if ( !$('tr').is('[row="a'+ y +'"]') ||
         $('tr[row="a'+ y +'"] > td[col="'+ x +'"]').hasClass('border')) {
              
-        //Удар стен
-        Walls.forEach(function(Wall, i) {
-            var X = Wall.x, Y = Wall.y;
+        //Удар стены
+        (function WallHit(Walls) {
             
-            for (var i = X.length ; i--; ) {
-                if ( X[i] == x && Y[i] == y ) {
-                    Wall.HP -= pwr;
-                    break;
+            Walls.forEach(function(Wall, i) {
+                var X = Wall.x, Y = Wall.y;
+                
+                if (Array.isArray(Wall)) WallHit(Wall);
+                else {
+                    for (var i = X.length ; i--; ) {
+                        if ( X[i] == x && Y[i] == y ) {
+                            Wall.HP -= pwr;
+                            break;
+                        }
+                    }
                 }
-            }
-        });
+            });
+            
+        })(Walls);
         
         return true;
+        
+    } else if (!pwr && $('tr[row="a'+ y +'"] > td[col="'+ x +'"]').attr('style') ) {
+        var part = x > settings.width / 2 ? 1 : 0; 
+        Bonus.activate(x, y, part);
     }
 }
 

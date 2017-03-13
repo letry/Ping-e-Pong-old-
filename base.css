@@ -29,3 +29,49 @@ fieldset .inputWrap input, select{
 .startButtons{
     display: none;
 }
+
+.bonus{
+    background: grey;
+}
+
+td.Wall{
+    background: url(img/Wall.png);
+}
+td.Ball{
+    background: url(img/Ball.png);
+}
+td.Shield{
+    background: url(img/Shield.png);
+}
+td.pWall{
+    background: url(img/pWall.png);
+}
+
+td.Speeds{
+    background: url(img/Speed.png);
+}
+td._1{
+    background: url(img/1.png);
+}
+td._2{
+    background: url(img/2.png);
+}
+td._3{
+    background: url(img/3.png);
+}
+td.Health{
+    background: url(img/Cross.png);
+}
+td.Widths{
+    background: url(img/Width.png);
+}
+
+td.Up{
+    background: url(img/Arrow.png);
+}
+td.Down{
+    background: url(img/Arrow.png);
+}
+td.Rnd{
+    background: url(img/Quest.png);
+}
