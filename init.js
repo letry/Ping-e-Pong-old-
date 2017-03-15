@@ -15,10 +15,10 @@ var settings = {
     },
     set difficult(val) {
         var startSpeed = 600,
-        startBonusChance = 1000;//!!!Было 20к
+        startBonusChance = 500;//!!!Было 20к
         this.powerBall = val > 2 ? 2 : 1;
         this.speedBall = startSpeed - val * 100;
-        this.SpeedShield = val > 2 ? 300 : 200;
+        this.SpeedShield = val > 2 ? 450 : 300;
         this.bonusСhance = startBonusChance + val * 10000;
     }
 };
@@ -32,6 +32,7 @@ settings.playZoneSet = 1;
 $('.submit').click(function() {
     settings.difficult = +$('#difficult option:selected').val();
     settings.multiWall = +$('#multiWall:checked').val();
+    settings.bonuses = +$('#bonuses:checked').val();
     
     $('.inputWrap input, select').attr('disabled','');
     $('.startButtons').fadeIn(400);
@@ -41,19 +42,21 @@ $('.submit').click(function() {
         bonusScript = document.createElement('script'),
         head = document.getElementById('head');
 	gameScript.src = "game.js";
+	gameScript.defer = true;
     bonusScript.src = "bonus.js";
+	bonusScript.defer = true;
     
-    head.appendChild(bonusScript);
+    if (settings.bonuses) head.appendChild(bonusScript);
     head.appendChild(gameScript);
 });
 
 
 $('.width, .height').change(function() {
     var width = +$('.width').val(),
-        height = +$('.height').val(),
-        val = +$(this).val();
+        height = +$('.height').val();
     
-    if ( val <= $(this).attr('max') && val >= $(this).attr('min') ) {
+    if ( width <= $(this).attr('max') && width >= $(this).attr('min') &&
+         height <= $(this).attr('max') && height >= $(this).attr('min')) {
         settings.width = width - 1;
         settings.height = height - 1;
         drawTable(width, height);
@@ -69,13 +72,6 @@ $('#playZone').change(function() {
         settings.playZoneSet = val;
     }
 });
-
-//$('#difficult').change(function() {
-//    var val = +$(this).val();
-//    if ( val <= 4 && val >= 1 ) {
-//        settings.difficult = val;
-//    }
-//});
 
 function drawTable(width, height) {
     var table = '';

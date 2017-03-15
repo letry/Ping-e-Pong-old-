@@ -11,8 +11,8 @@ Object.defineProperties(Balls, {
                     lBpwr = lastBall.pwr;
 
                 for (let i = val + 1; --i;) {
-                    let lBpos = lastBall.getPosition,
-                        lBdir = lastBall.getDirection;
+                    let lBpos = lastBall.getPosition.slice(),
+                        lBdir = lastBall.getDirection.slice();
                     
                     if (i == val) revDir(1);
                     else if (i == val-1) revDir(0,1);
@@ -54,16 +54,19 @@ Object.defineProperties(Balls, {
                 }
             }
         },
-        remove: {
+        delete: {
             enumerable: false,
             get: function() {return 0},
             set: function(val) {
-                var length = this.length,
-                    lastBall;
+                var length = this.length;
                          
-                for (let i = length; this.length > 1 && this.length > length - val; --i) {
+                for (let i = length - 1; this.length > 1 && this.length > length - val; --i) {
                     this[i].stop();
-                    draw(this[i].x, this[i].y);
+                    let position = this[i].getPosition.slice(),
+                        posY = position[0],
+                        posX = position[1];
+                    
+                    draw(posX, posY);
                     --this.length;
                 }
                 
@@ -181,11 +184,13 @@ function User(speed, widthShield, HP, part) {
     	},
     	speed: {
     		get: function() {
-                return (settings.SpeedShield - speed) / (settings.SpeedShield / 6);
+                return Math.round((settings.SpeedShield - speed) / (settings.SpeedShield / 6));
             },
     		set: function(val) {
-                var spd = settings.SpeedShield - val * (settings.SpeedShield / 6);
-                this.shield.speed = speed = spd;
+                if (val > 0) {
+                    var spd = settings.SpeedShield - val * (settings.SpeedShield / 6);
+                    this.shield.speed = speed = spd;
+                }
     		}
     	},
     	widthShield: {
@@ -194,12 +199,13 @@ function User(speed, widthShield, HP, part) {
                 var center = Math.floor(settings.height/2), width = [];
                 
                 if (val > 0) {
+                    widthShield = val;
                     for (;--val + 1;){
                         width.push(++center);
                     }   
 
                     if (this.shield) this.shield.HP = 0;
-                    this.shield = new Shield(Infinity, part ? part - settings.playZone : part + settings.playZone, width, this.speed);
+                    this.shield = new Shield(Infinity, part ? part - settings.playZone : part + settings.playZone, width, speed);
                 }
                 
     		}
@@ -400,32 +406,41 @@ Bonus.runCreater = function bonusCreater (intrval) {
 //AutoFunctions
 Users.push(new User(1, 1, 1, 0), new User(1, 1, 1, settings.width));
 
-contBonus = new BonusClass('bonus', null);
+if (settings.bonuses) {
+    contBonus = new BonusClass('bonus', null);
 
-contBonus.push(new BonusClass('Ball', Balls),
-               new BonusClass('pWall', [Users[0], Users[1]]),
-               new BonusClass('Shield', [Users[0], Users[1]]),
-               new BonusClass('Wall', Walls));
+    contBonus.push(
+        new BonusClass('Ball', Balls),
+        new BonusClass('pWall', [Users[0], Users[1]]),
+        new BonusClass('Shield', [Users[0], Users[1]]),
+        new BonusClass('Wall', Walls));
 
-contBonus[0].push(new BonusClass('Speeds', 'spd'),
-                  new BonusClass('Power', 'pwr'),
-                  new BonusClass('Multi', 'create'));
+    contBonus[0].push(
+        new BonusClass('Speeds', 'spd'),
+        new BonusClass('Power', 'pwr'),
+        new BonusClass('Multi', 'create'),
+        new BonusClass('Delete', 'delete')
+    );
 
-contBonus[1].push(new BonusClass('Health', 'HP'));
+    contBonus[1].push(new BonusClass('Health', 'HP'));
 
-contBonus[2].push(new BonusClass('Speeds', 'speed'),
-                  new BonusClass('Widths', 'widthShield'));
+    contBonus[2].push(
+        new BonusClass('Speeds', 'speed'),
+        new BonusClass('Widths', 'widthShield')
+    );
 
-contBonus[3].push(new BonusClass('Set', 'create'));
+    contBonus[3].push(new BonusClass('Set', 'create'));
 
-actions.call(contBonus[0][0]);
-actions.call(contBonus[0][1]);
-actions.call(contBonus[0][2], 1);
-actions.call(contBonus[1][0]);
-actions.call(contBonus[2][0]);
-actions.call(contBonus[2][1]);
-actions.call(contBonus[3][0], 1);
-
+    actions.call(contBonus[0][0]);
+    actions.call(contBonus[0][1]);
+    actions.call(contBonus[0][2], 1);
+    actions.call(contBonus[0][3], 1);
+    actions.call(contBonus[1][0]);
+    actions.call(contBonus[2][0]);
+    actions.call(contBonus[2][1]);
+    actions.call(contBonus[3][0], 1);
+}
+    
 //Kontroller
 $('body').on('keydown',function(e){
 
@@ -510,7 +525,10 @@ $('.confirm').click(function() {
          [Math.floor(settings.height/2), Math.floor(settings.width/2)],
           [1, 1]) );
         Balls[Balls.length-1].start();
-        Bonus.runCreater(settings.bonusСhance);
+        
+        if (settings.bonuses) {
+            Bonus.runCreater(settings.bonusСhance);
+        }
     }
 
     function isReady(User) {
