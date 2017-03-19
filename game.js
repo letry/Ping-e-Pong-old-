@@ -1,5 +1,18 @@
 "use strict";
-var Walls = [], Balls = [], Users = [], Bonuses = [], contBonus, score = 0;
+var Walls = [], Balls = [], Users = [], Bonuses = [], contBonus, score = 0, statistic;
+
+Array.prototype.deepRemove = function(elem) {
+    
+    var indx = this.indexOf(elem);
+    if (indx !== -1) {
+        return this.splice(indx, 1);
+    } else {
+        for (let i = 0; i < this.length; ++i) {
+            if (Array.isArray(this[i])) this[i].deepRemove(elem);
+        }
+    }
+    return false;
+}
 
 Object.defineProperties(Balls, {
     create: {
@@ -17,9 +30,6 @@ Object.defineProperties(Balls, {
                     if (i == val) revDir(1);
                     else if (i == val-1) revDir(0,1);
                     else if (i == val-2) revDir(1,0);
-                    
-                    lBdir[0] ? ++lBpos[0] : --lBpos[0];
-                    lBdir[1] ? ++lBpos[1] : --lBpos[1];
                     
                     this.push( new Ball(lBspd, lBpwr, lBpos, lBdir) );
                     this[this.length-1].start();
@@ -41,7 +51,7 @@ Object.defineProperties(Balls, {
             get: function() {return 0},
             set: function(val) {
                 for (let i = 0; i < this.length ; ++i) {
-                    this[i].spd += val * 50;
+                    this[i].spd -= val * 50;
                 } 
             }
         },
@@ -58,35 +68,58 @@ Object.defineProperties(Balls, {
             enumerable: false,
             get: function() {return 0},
             set: function(val) {
-                var length = this.length;
-                         
-                for (let i = length - 1; this.length > 1 && this.length > length - val; --i) {
-                    this[i].stop();
-                    let position = this[i].getPosition.slice(),
-                        posY = position[0],
-                        posX = position[1];
-                    
-                    draw(posX, posY);
-                    --this.length;
-                }
+                let length = this.length;
                 
+                    for (let i = length - 1;
+                         (val == Infinity ? true : this.length > 1) && 
+                         this.length > length - val &&
+                         this.length > 0;
+                         --i) {
+                        this[i].stop();
+                        let position = this[i].getPosition.slice(),
+                            posY = position[0],
+                            posX = position[1];
+
+                        draw(posX, posY);
+                        --this.length;
+                }
             }
         }
 });
 
-Object.defineProperty(Walls, 'create', {
-    enumerable: false,
-    get: function() {return 0},
-    set: function(val) {
-        var emptyBlocks = $('td[col]:not([class],[style])'),
-            randBlock = getRandom(0, emptyBlocks.length),
-            randX = +emptyBlocks[randBlock].attributes[0].value,
-            randY = +emptyBlocks[randBlock].parentNode.attributes[0].value.slice(1);
-        
-            this.push( new Wall(val, randX, randY) );
-        }
-});
+Object.defineProperties(Walls, {
+    create: {
+        enumerable: false,
+        get: function() {return 0},
+        set: function(val) {
+            var emptyBlocks = $('td[col]:not([class],[style])'),
+                randBlock = getRandom(0, emptyBlocks.length),
+                randX = +emptyBlocks[randBlock].attributes[0].value,
+                randY = +emptyBlocks[randBlock].parentNode.attributes[0].value.slice(1);
 
+                this.push( new Wall(val, randX, randY) );
+            }
+    },
+    clear: {
+        enumerable: false,
+        get: function() {return 0},
+        set: function(val) {
+            !function cleared(Wall) {
+                for (let i = Wall.length - 1; i >= 0 && val; --i) {
+                    if ( Array.isArray(Wall[i]) ) cleared(Wall[i]);
+                    
+                    if (val) {
+                        Wall[i].HP = 0;
+                        Walls.deepRemove(Wall[i]);
+                        --val;
+                    }
+                    
+                }
+            }(this);
+        }
+    }
+    
+});
 
 
 function Ball(spd, pwr, position, direction) {
@@ -124,15 +157,14 @@ function Ball(spd, pwr, position, direction) {
 			
 			//Регулировка направления
 			function checkAll() {
-				
-				if ( checkBlock(Y+1, X, this.pwr) || checkBlock(Y-1, X, this.pwr) ) {
-					revDir(1);
-				}
-				
-				if ( checkBlock(Y, X+1, this.pwr) || checkBlock(Y, X-1, this.pwr) ) {
-					revDir();
-				}
-				
+				if ( (direction[0] && (checkBlock(Y+1, X, this.pwr))) || 
+                     (!direction[0] && (checkBlock(Y-1, X, this.pwr)))) {
+                    revDir(1);
+                }
+                if ( (direction[1] && (checkBlock(Y, X+1, this.pwr))) || 
+                     (!direction[1] && (checkBlock(Y, X-1, this.pwr)))) {
+                    revDir();
+                }
 			}
             
 			//Инверсия направления
@@ -278,10 +310,6 @@ function Wall(HP, x, y) {
 		get: function() {return HP},
 		set: function(val) {
             HP = val;
-            if (val < 1) {
-                this.y = null;
-                this.x = null;
-            }
             this.setWall();
             this.draw();
 		}
@@ -310,7 +338,7 @@ function Shield(HP, x, y, speed) {
                     indx = !dir ? maxIndY : minIndY,
                     dir = !dir ? 1 : -1;
                 
-                if ( !checkBlock(Y, this.x[indx] || x) ) {
+                if ( !checkBlock(Y, this.x[indx]) ) {
                     for (var i = this.y.length; i--;) {
                         draw(this.x[i], this.y[i]);
                         this.y[i] += dir;
@@ -379,6 +407,7 @@ function Bonus(x, y, conf) {
     
 }
 
+
 Bonus.activate = function (x, y, part) {
     Bonuses.forEach(function(item, i) {
         if (item.x == x && item.y == y) {
@@ -388,7 +417,7 @@ Bonus.activate = function (x, y, part) {
     });
 }
 
-Bonus.runCreater = function bonusCreater (intrval) {
+Bonus.runCreater = function bonusCreater () {
     var playZoneBlocks = $('td[class="playZone"]'),
         randBlock = getRandom(0, playZoneBlocks.length),
         randX = +playZoneBlocks[randBlock].attributes[0].value,
@@ -400,11 +429,21 @@ Bonus.runCreater = function bonusCreater (intrval) {
     
     Bonuses.push( new Bonus(randX, randY, [randClass, randType, randAct]) );
     
-    setTimeout(bonusCreater, settings.bonusСhance);
+    Bonus.timeoutId = setTimeout(bonusCreater, settings.bonusСhance);
 }
 
+Bonus.stopCreater = function () {
+    if (this.timeoutId) clearTimeout(this.timeoutId);
+}
+
+Bonus.clear = function() {
+    $('.main table td[style *= "png"]').removeAttr('style');
+    Bonuses = [];
+}
+
+
 //AutoFunctions
-Users.push(new User(1, 1, 1, 0), new User(1, 1, 1, settings.width));
+startSetting();
 
 if (settings.bonuses) {
     contBonus = new BonusClass('bonus', null);
@@ -431,18 +470,24 @@ if (settings.bonuses) {
 
     contBonus[3].push(new BonusClass('Set', 'create'));
 
-    actions.call(contBonus[0][0]);
-    actions.call(contBonus[0][1]);
-    actions.call(contBonus[0][2], 1);
-    actions.call(contBonus[0][3], 1);
-    actions.call(contBonus[1][0]);
-    actions.call(contBonus[2][0]);
-    actions.call(contBonus[2][1]);
-    actions.call(contBonus[3][0], 1);
+    actions([
+        contBonus[0][0],
+        contBonus[0][1],
+        contBonus[1][0],
+        contBonus[2][0],
+        contBonus[2][1]
+    ]);
+    
+    actions([
+        contBonus[0][2],
+        contBonus[0][3],
+        contBonus[3][0]
+    ], 1)
+    
 }
     
 //Kontroller
-$('body').on('keydown',function(e){
+$('body').on('keydown', function(e){
 
     switch(e.which) {
             
@@ -479,7 +524,6 @@ $('body').on('keydown',function(e){
 });
 
 $('.startButtons input[type="number"]').on('change', function(e){
-
     var attr = +$(this).attr('value'),
         val = +$(this).val(),
 		cls = $(this).attr('class'),
@@ -520,70 +564,36 @@ $('.confirm').click(function() {
     
     Users[userId].ready = true;
     
-    if ( Users.every(isReady) ) {
-        Balls.push( new Ball(settings.speedBall, settings.powerBall,
-         [Math.floor(settings.height/2), Math.floor(settings.width/2)],
-          [1, 1]) );
-        Balls[Balls.length-1].start();
-        
-        if (settings.bonuses) {
-            Bonus.runCreater(settings.bonusСhance);
-        }
-    }
+    if ( Users.every(isReady) ) startGame();
 
     function isReady(User) {
         return User.ready;
     }
 });
 
-function checkBlock(y, x, pwr) {
-    var pwr = pwr || 0;
+$('.rtrnSetPlayer').click(function(){
+    Bonus.clear();
+    Walls.clear = Infinity;
+    Balls.delete = Infinity;
     
-    //Проверка победы
-        if ( x < Users[0].part || x > Users[1].part ) {
-                
-            if ( x < Users[0].part ) {
-                alert('Конец игры. Победил игрок 2 со счетом '+score);
-            }
-            if ( x > Users[1].part ) {
-                alert('Конец игры. Победил игрок 1 со счетом '+score);
-            }
-            
-            Balls.forEach(function(Ball) {
-                Ball.stop();
-            });
-            throw 'Игра окончена';
-        }
+    startSetting();
+    $('footer').hide();
+});
 
-    if ( !$('tr').is('[row="a'+ y +'"]') ||
-        $('tr[row="a'+ y +'"] > td[col="'+ x +'"]').hasClass('border')) {
-             
-        //Удар стены
-        (function WallHit(Walls) {
-            
-            Walls.forEach(function(Wall, i) {
-                var X = Wall.x, Y = Wall.y;
-                
-                if (Array.isArray(Wall)) WallHit(Wall);
-                else {
-                    for (var i = X.length ; i--; ) {
-                        if ( X[i] == x && Y[i] == y ) {
-                            Wall.HP -= pwr;
-                            break;
-                        }
-                    }
-                }
-            });
-            
-        })(Walls);
-        
-        return true;
-        
-    } else if (!pwr && $('tr[row="a'+ y +'"] > td[col="'+ x +'"]').attr('style') ) {
-        var part = x > settings.width / 2 ? 1 : 0; 
-        Bonus.activate(x, y, part);
-    }
-}
+$('.rtrn').click(function(){
+    Bonus.clear();
+    Walls.clear = Infinity;
+    Balls.delete = Infinity;
+    
+    returnUsers();
+    startGame();
+    $('footer').hide();
+});
+
+$('.rtrnSetField').click(function(){
+    document.location.href = document.location;
+});
+
 
 //View
 function draw(x, y, col, cls){
@@ -607,4 +617,102 @@ function draw(x, y, col, cls){
         else blk.removeAttr('style');
 
     } 
+}
+
+//Functions
+function returnUsers() {
+    let spd_0 = +$('.speed:first').val(),
+        spd_1 = +$('.speed:last').val(),
+        wdt_0 = +$('.widthShield:first').val(),
+        wdt_1 = +$('.widthShield:last').val(),
+        hp_0 = +$('.HP:first').val(),
+        hp_1 = +$('.HP:last').val();
+    
+    Users[0].HP = hp_0;
+    Users[1].HP = hp_1;
+        
+    Users[0].speed = spd_0;
+    Users[1].speed = spd_1;
+        
+    Users[0].widthShield = wdt_0;
+    Users[1].widthShield = wdt_1;
+}
+
+function startGame() {
+    Balls.push( new Ball(settings.speedBall, settings.powerBall,
+         [Math.floor(settings.height/2), Math.floor(settings.width/2)],
+          [1, 1]) );
+        Balls[Balls.length-1].start();
+    
+    if (settings.bonuses) {
+        Bonus.runCreater();
+    }
+}
+
+function startSetting(){  
+    if (!Users[0]) {
+        Users.push(new User(1, 1, 1, 0), new User(1, 1, 1, settings.width));
+    } else {
+        $('.startButtons').find('input').removeAttr('disabled');
+        returnUsers()
+        Users[0].ready = Users[1].ready = false;
+    }
+}
+
+function checkBlock(y, x, pwr) {
+    var pwr = pwr || 0;
+    
+    //Проверка победы
+        if ( x < Users[0].part || x > Users[1].part ) {
+                
+            if ( x < Users[0].part ) {
+                alert('Конец игры. Победил игрок 2 со счетом '+score);
+            }
+            if ( x > Users[1].part ) {
+                alert('Конец игры. Победил игрок 1 со счетом '+score);
+            }
+            
+            Balls.forEach(function(Ball) {
+                Ball.stop();
+            });
+            Bonus.stopCreater();
+            $('footer').show();
+            throw 'Игра окончена';
+        }
+
+    if ( !$('tr').is('[row="a'+ y +'"]') ||
+        $('tr[row="a'+ y +'"] > td[col="'+ x +'"]').hasClass('border')) {
+             
+        //Удар стены
+        (function WallHit(Walls) {
+            
+            Walls.forEach(function(Wall, l) {
+                var X = Wall.x, Y = Wall.y;
+                
+                if (Array.isArray(Wall)) WallHit(Wall);
+                else {
+                    for (let i = X.length ; i--; ) {
+                        if ( X[i] == x && Y[i] == y ) {
+                            Wall.HP -= pwr;
+                            if (!Wall.HP) {
+                                window.Walls.deepRemove(Wall);
+                            }
+                            break;
+                        }
+                    }
+                }
+            });
+            
+        })(Walls);
+        
+        return true;
+        
+    } else if (!pwr && $('tr[row="a'+ y +'"] > td[col="'+ x +'"]').attr('style') ) {
+        var part = x > settings.width / 2 ? 1 : 0; 
+        Bonus.activate(x, y, part);
+    }
+}
+
+function getRandom(min, max) {
+  return Math.floor(Math.random() * (max - min)) + min;
 }

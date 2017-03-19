@@ -14,12 +14,11 @@ var settings = {
         }
     },
     set difficult(val) {
-        var startSpeed = 600,
-        startBonusChance = 500;//!!!Было 20к
+        var startSpeed = 600;
         this.powerBall = val > 2 ? 2 : 1;
         this.speedBall = startSpeed - val * 100;
         this.SpeedShield = val > 2 ? 450 : 300;
-        this.bonusСhance = startBonusChance + val * 10000;
+        this.bonusСhance = val * 10000;
     }
 };
 
@@ -73,6 +72,7 @@ $('#playZone').change(function() {
     }
 });
 
+//View
 function drawTable(width, height) {
     var table = '';
     for (var i = 0; i < height; i++) {

@@ -34,44 +34,23 @@ fieldset .inputWrap input, select{
     background: grey;
 }
 
-td.Wall{
-    background: url(img/Wall.png);
-}
-td.Ball{
-    background: url(img/Ball.png);
-}
-td.Shield{
-    background: url(img/Shield.png);
-}
-td.pWall{
-    background: url(img/pWall.png);
+.main table {
+    border-collapse: collapse;
 }
 
-td.Speeds{
-    background: url(img/Speed.png);
-}
-td._1{
-    background: url(img/1.png);
-}
-td._2{
-    background: url(img/2.png);
-}
-td._3{
-    background: url(img/3.png);
-}
-td.Health{
-    background: url(img/Cross.png);
-}
-td.Widths{
-    background: url(img/Width.png);
+td {
+    width:30px;
+    height:30px;
 }
 
-td.Up{
-    background: url(img/Arrow.png);
+footer {
+    margin-top: 10%;
+    display: none;
 }
-td.Down{
-    background: url(img/Arrow.png);
+.footerWrap {
+    display: flex;
+    justify-content: space-around;
 }
-td.Rnd{
-    background: url(img/Quest.png);
+.footerWrap input {
+    font-size: 23px;
 }

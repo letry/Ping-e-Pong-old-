@@ -1,7 +1,5 @@
 td{
     border:1px solid white;
-    width:20px;
-    height:20px;
 }
 html{
     background:black;
@@ -22,6 +20,9 @@ html{
 .info-block{
     height: 40px;
     background: rgba(100,160,200,.7);
+    font-size: 40px;
+    color: whitesmoke;
+    text-align: center;
 }
 
 fieldset legend, label{

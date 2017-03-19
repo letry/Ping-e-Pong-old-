@@ -60,19 +60,17 @@ function BonusClass(name, val) {
     
 }
     
-function actions(numb) {
-    if (!numb) {
-        this.push(new BonusClass('Down', -1));
-        this.push(new BonusClass('Up', 1));
-        this.push( new BonusClass('Rand', getRandom(0, 2) ? 1 : -1, 1) );
-    } else {
-        this.push(new BonusClass('1', 1));
-        this.push(new BonusClass('2', 2));
-        this.push(new BonusClass('3', 3));
-        this.push(new BonusClass('Rand', getRandom(1, 4)));
-    }
-}
-
-function getRandom(min, max) {
-  return Math.floor(Math.random() * (max - min)) + min;
+function actions(obj, numb) {
+    obj.forEach(function(obj){
+        if (!numb) {
+            obj.push(new BonusClass('Down', -1));
+            obj.push(new BonusClass('Up', 1));
+            obj.push( new BonusClass('Rand', getRandom(0, 2) ? 1 : -1, 1) );
+        } else {
+            obj.push(new BonusClass('1', 1));
+            obj.push(new BonusClass('2', 2));
+            obj.push(new BonusClass('3', 3));
+            obj.push(new BonusClass('Rand', getRandom(1, 4)));
+        }
+    });
 }
