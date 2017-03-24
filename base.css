@@ -1,7 +1,3 @@
-.startButtons input{
-    float: left;
-    clear: both;
-}
 fieldset {
     max-width: 500px;
     margin: 1% auto;
@@ -18,9 +14,12 @@ fieldset .inputWrap label{
     margin-top: 5%;
 }
 .main {
-    margin-top: 3%;
+    margin-top: 1%;
     display: flex;
     justify-content: space-around;
+}
+.main > * {
+    margin: 0 1%;
 }
 fieldset .inputWrap input, select{
     float: right;
@@ -28,8 +27,22 @@ fieldset .inputWrap input, select{
 }
 .startButtons{
     display: none;
+    font-size: 25px;
+    max-width: 200px
 }
-
+.startButtons input{
+    float: left;
+    font-size: 25px;
+    width: 82%;
+}
+.startButtons input[type="button"]{
+    width: 100%;
+}
+.startButtons > img {
+    width: 50%;
+    margin: 0 auto;
+    display: block;
+}
 .bonus{
     background: grey;
 }
@@ -38,19 +51,57 @@ fieldset .inputWrap input, select{
     border-collapse: collapse;
 }
 
-td {
-    width:30px;
-    height:30px;
+.main table td {
+    width: 30px;
+    height: 30px;
 }
 
 footer {
     margin-top: 10%;
     display: none;
 }
+header .st{}
 .footerWrap {
     display: flex;
     justify-content: space-around;
 }
 .footerWrap input {
     font-size: 23px;
+}
+.ball {
+    position: relative;
+}
+.starter {
+    position: absolute;
+    font-size: 150px;
+    line-height: 0;
+}
+.intface {
+    width: 18%;
+    float: left;
+    height: 35px;
+}
+.statistic {
+    display: none;
+    background: grey;
+    max-width: 50%;
+    margin: 0 auto;
+    font-size: 20px;
+    padding: 2%;
+}
+.statistic p {
+    border-bottom: 1px dashed;
+}
+.statistic p.center{
+    text-align: center;
+}
+.statistic p span{
+    float: right;
+}
+.active {
+    display: block;
+}
+.statwrap {
+    margin-top: 2%;
+    display: none;
 }

@@ -7,7 +7,24 @@
 </head>
 <body>
 
-<div class="info-block">Пинг-е-Понг</div>
+
+<header>
+    <div class="head-block">Пинг-е-Понг</div>
+    <div class="statwrap">
+        <div class="footerWrap">
+            <div class="item"><input type="button" value="Статистика игры" class="stat"></div>
+        </div>
+        <div class="statistic">
+            <p>Время игры<span class='gameTime'></span></p>
+            <p>Число ходов мяча<span class='stepBall'></span></p>
+            <p>Уничтожено стен<span class='destroyedWall'></span></p>
+            <p>Создано бонусов<span class='totalBonuses'></span></p>
+            <p>Активировано бонусов<span class='activBonuses'></span></p>
+            <p>Количество мячей в игре<span class='totalBalls'></span></p>
+            <p>Создано стен<span class='totalWalls'></span></p>
+        </div>
+    </div>
+</header>
 
 <div class="settings">
     <fieldset>
@@ -66,23 +83,30 @@
     </fieldset>
 </div>
 
-
-<div class="info-block"></div>
-
 <div class="main">
   
    <div class="startButtons">
+      <img src="img/interface/WSAD.png">
        <div class="player 0">
             <div class="info">Игрок 1</div>
             <div class="info countPoint">3</div>
-            <input type="number" min="1" max="3" class="speed" title="Скорость" value="1">
-            <input type="number" min="1" max="3" class="widthShield" title="Ширина щита" value="1">
-            <input type="number" min="1" max="3" class="HP" title="Прочность стены" value="1">
+            
+            <div class="speedlbl intface"></div>
+            <input type="number" min="1" max="3" class="speed" value="1">
+            
+            <div class="widthlbl intface"></div>
+            <input type="number" min="1" max="3" class="widthShield" value="1">
+            
+            <div class="walllbl intface"></div>
+            <input type="number" min="1" max="3" class="HP" value="1">
+            
             <input type="button" class="confirm" value="Готов">
         </div>
+        
     </div>
     
     <table>
+    <caption></caption>
     <tr class="wall">
     <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
     </tr>
@@ -93,14 +117,23 @@
     </table>
     
     <div class="startButtons">
+       <img src="img/interface/arrows.png">
         <div class="player 1">
-            <div class="info">Игрок 2</div>
+            <div class="info">Игрок 1</div>
             <div class="info countPoint">3</div>
-            <input type="number" min="1" max="3" class="speed" title="Скорость" value="1">
-            <input type="number" min="1" max="3" class="widthShield" title="Ширина щита" value="1">
-            <input type="number" min="1" max="3" class="HP" title="Прочность стены" value="1">
+            
+            <div class="speedlbl intface"></div>
+            <input type="number" min="1" max="3" class="speed" value="1">
+            
+            <div class="widthlbl intface"></div>
+            <input type="number" min="1" max="3" class="widthShield" value="1">
+            
+            <div class="walllbl intface"></div>
+            <input type="number" min="1" max="3" class="HP" value="1">
+            
             <input type="button" class="confirm" value="Готов">
         </div>
+        
     </div>
     
 </div>

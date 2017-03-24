@@ -1,5 +1,38 @@
 "use strict";
-var Walls = [], Balls = [], Users = [], Bonuses = [], contBonus, score = 0, statistic;
+var Walls = [], Balls = [], Users = [], Bonuses = [], contBonus, score = 0,
+    statistic = {
+        stepBall: 0,
+        destroyedWall: 0,
+        totalBonuses: 0,
+        totalBalls: 0,
+        totalWalls: 0,
+        activBonuses: 0,
+    };
+
+Object.defineProperties(statistic,{
+   startTimer: {
+       enumerable: false,
+       get: function() {
+           return this.startTime = new Date;
+       }
+   },
+    stopTimer: {
+        enumerable: false,
+        get: function() {
+            if (this.startTime) {
+                let difTime = new Date(new Date - this.startTime);
+                return this.gameTime = difTime.getMinutes() + ':' + difTime.getSeconds();
+            } else return 'Таймер не запущен';
+       }
+    },
+    reset: {
+        get: function() {
+            for (let prop in this) {
+                this[prop] = 0;
+            }
+        }
+    }
+});
 
 Array.prototype.deepRemove = function(elem) {
     
@@ -98,6 +131,7 @@ Object.defineProperties(Walls, {
                 randY = +emptyBlocks[randBlock].parentNode.attributes[0].value.slice(1);
 
                 this.push( new Wall(val, randX, randY) );
+                ++statistic.totalWalls;
             }
     },
     clear: {
@@ -122,6 +156,7 @@ Object.defineProperties(Walls, {
 });
 
 
+//Constructors
 function Ball(spd, pwr, position, direction) {
     var intId;
     
@@ -180,13 +215,21 @@ function Ball(spd, pwr, position, direction) {
 
             //Изменение скорости
             if (this.spd > settings.speedBall / 3) this.spd --;
-            ++score;
+            ++statistic.stepBall;
             
         intId = setTimeout(intrval.bind(this), this.spd);
 	};
 	this.stop = function(){
 		clearTimeout(intId);
 	};
+    
+    !function(){
+        let clr = 305 - pwr * 50,
+            color = "rgb("+clr+", 255, 255)";
+        
+        draw(position[1], position[0], color, 'border ball');
+        ++statistic.totalBalls;
+    }();
 }
 
 function User(speed, widthShield, HP, part) {
@@ -413,6 +456,7 @@ Bonus.activate = function (x, y, part) {
         if (item.x == x && item.y == y) {
             item.activate(part);
             Bonuses.splice(i, 1);
+            ++statistic.activBonuses;
         }
     });
 }
@@ -428,7 +472,7 @@ Bonus.runCreater = function bonusCreater () {
         randAct =   getRandom(0 ,[contBonus[randClass][randType].length]);
     
     Bonuses.push( new Bonus(randX, randY, [randClass, randType, randAct]) );
-    
+    ++statistic.totalBonuses;
     Bonus.timeoutId = setTimeout(bonusCreater, settings.bonusСhance);
 }
 
@@ -488,7 +532,6 @@ if (settings.bonuses) {
     
 //Kontroller
 $('body').on('keydown', function(e){
-
     switch(e.which) {
             
         case 87:
@@ -557,6 +600,11 @@ $('.startButtons input[type="number"]').on('change', function(e){
         Users[userId][cls] = val;
 	}
 });
+$('.startButtons input[type="number"]').on('mouseenter', function() {
+    $(this).on('keydown', function(e){
+        e.preventDefault();
+    });
+});
 
 $('.confirm').click(function() {
     var userId = +$(this).parent().attr('class')[7];
@@ -577,7 +625,7 @@ $('.rtrnSetPlayer').click(function(){
     Balls.delete = Infinity;
     
     startSetting();
-    $('footer').hide();
+    $('footer, .statwrap').hide();
 });
 
 $('.rtrn').click(function(){
@@ -587,13 +635,20 @@ $('.rtrn').click(function(){
     
     returnUsers();
     startGame();
-    $('footer').hide();
+    $('footer, .statwrap').hide();
 });
 
 $('.rtrnSetField').click(function(){
     document.location.href = document.location;
 });
 
+$('.stat').click(function() {
+    $('.statistic').toggleClass('active');
+    $('.statistic span').each(function(){
+        let clas = $(this).attr('class');
+        $(this).text(statistic[clas]);
+    })
+});
 
 //View
 function draw(x, y, col, cls){
@@ -639,17 +694,40 @@ function returnUsers() {
 }
 
 function startGame() {
-    Balls.push( new Ball(settings.speedBall, settings.powerBall,
-         [Math.floor(settings.height/2), Math.floor(settings.width/2)],
-          [1, 1]) );
-        Balls[Balls.length-1].start();
+    let spd = settings.speedBall,
+        pwr = settings.powerBall,
+        pozY = Math.floor(settings.height/2),
+        pozX = Math.floor(settings.width/2),
+        dirY = getRandom(0, 2),
+        dirX = getRandom(0, 2);
     
-    if (settings.bonuses) {
-        Bonus.runCreater();
-    }
+    statistic.reset;
+    gameOver.flag = false;
+    
+    Balls.push( new Ball(spd, pwr, [pozY, pozX], [dirY, dirX]) );
+    $('.startButtons').hide(300);
+    
+    !function startAnimate(count) {
+        --count;
+        if (count) {
+            $('.ball').html(`<div class="starter">${count}</div>`);
+            $('.ball > .starter').animate({fontSize: 0}, 1000, 'linear', startAnimate.bind(null, count));
+        }
+        
+    }(4);
+    
+    setTimeout(function() {
+        Balls[Balls.length-1].start();
+        statistic.startTimer;
+        
+        if (settings.bonuses) {
+            Bonus.runCreater();
+        }
+    }, 3000);
 }
 
-function startSetting(){  
+function startSetting(){
+    $('.startButtons').show(300);
     if (!Users[0]) {
         Users.push(new User(1, 1, 1, 0), new User(1, 1, 1, settings.width));
     } else {
@@ -659,32 +737,38 @@ function startSetting(){
     }
 }
 
+function gameOver(winner) {
+    if (!gameOver.flag) {
+        $('caption').html(`Конец игры. Победил игрок ${winner + 1}`);
+        setTimeout(()=>$('caption').html(''), 5000);
+        
+        Balls.forEach(function(Ball) {
+            Ball.stop();
+        });
+        statistic.stopTimer;
+        Bonus.stopCreater();
+        Bonus.clear();
+        
+        $('footer, .statwrap').show();
+    }
+    gameOver.flag = true;
+}
+
 function checkBlock(y, x, pwr) {
     var pwr = pwr || 0;
     
     //Проверка победы
         if ( x < Users[0].part || x > Users[1].part ) {
-                
-            if ( x < Users[0].part ) {
-                alert('Конец игры. Победил игрок 2 со счетом '+score);
-            }
-            if ( x > Users[1].part ) {
-                alert('Конец игры. Победил игрок 1 со счетом '+score);
-            }
-            
-            Balls.forEach(function(Ball) {
-                Ball.stop();
-            });
-            Bonus.stopCreater();
-            $('footer').show();
-            throw 'Игра окончена';
+            let winner = x > Users[1].part ? 0 : 1;
+            gameOver(winner);
+            return;
         }
 
     if ( !$('tr').is('[row="a'+ y +'"]') ||
         $('tr[row="a'+ y +'"] > td[col="'+ x +'"]').hasClass('border')) {
              
         //Удар стены
-        (function WallHit(Walls) {
+        !function WallHit(Walls) {
             
             Walls.forEach(function(Wall, l) {
                 var X = Wall.x, Y = Wall.y;
@@ -694,8 +778,9 @@ function checkBlock(y, x, pwr) {
                     for (let i = X.length ; i--; ) {
                         if ( X[i] == x && Y[i] == y ) {
                             Wall.HP -= pwr;
-                            if (!Wall.HP) {
+                            if (Wall.HP < 1) {
                                 window.Walls.deepRemove(Wall);
+                                ++statistic.destroyedWall;
                             }
                             break;
                         }
@@ -703,7 +788,7 @@ function checkBlock(y, x, pwr) {
                 }
             });
             
-        })(Walls);
+        }(Walls);
         
         return true;
         

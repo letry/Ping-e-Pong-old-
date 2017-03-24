@@ -1,33 +1,55 @@
-td{
+.main table td{
     border:1px solid white;
 }
 html{
-    background:black;
+    background: rgb(45, 38, 156);
 }
 .wall {
     background: grey;
 }
 .player *{
-    min-width: 100px;
-    outline: 1px dashed rgb(100,160,200);
+    outline: 1px solid white;
     text-align: center;
 }
-
-.info{
-    height: 20px;
+.info {
     background: rgba(255,255,255,.5);
 }
-.info-block{
+.info.countpoint {
+    background: rgba(70,255,255,0.9);
+}
+.head-block {
     height: 40px;
     background: rgba(100,160,200,.7);
     font-size: 40px;
     color: whitesmoke;
     text-align: center;
+    padding-bottom: 7px;
 }
-
 fieldset legend, label{
     color: white;
 }
 .playZone {
-     background:  rgba(70,255,255,0.7);
+     background: rgba(70,255,255,0.7);
+}
+.starter {
+    color: deepskyblue;
+}
+.speedlbl {
+    background: url(img/interface/Ispeed.png), rgba(70,255,255,0.9);
+    background-size: cover;
+    background-repeat: round;
+}
+.widthlbl {
+    background: url(img/interface/Iwidth.png), rgba(70,255,255,0.9);
+    background-size: cover;
+    background-repeat: round;
+}
+.walllbl {
+    background: url(img/interface/Iwall.png), rgba(70,255,255,0.9);
+    background-size: cover;
+    background-repeat: round;
+}
+caption {
+    background: white;
+    font-size: 26px;
 }
