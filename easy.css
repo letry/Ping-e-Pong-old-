@@ -1,6 +1,3 @@
-.main table td{
-    border:1px solid white;
-}
 html{
     background: rgb(45, 38, 156);
 }
@@ -34,22 +31,14 @@ fieldset legend, label{
 .starter {
     color: deepskyblue;
 }
-.speedlbl {
-    background: url(img/interface/Ispeed.png), rgba(70,255,255,0.9);
-    background-size: cover;
-    background-repeat: round;
-}
-.widthlbl {
-    background: url(img/interface/Iwidth.png), rgba(70,255,255,0.9);
-    background-size: cover;
-    background-repeat: round;
-}
-.walllbl {
-    background: url(img/interface/Iwall.png), rgba(70,255,255,0.9);
-    background-size: cover;
-    background-repeat: round;
-}
 caption {
     background: white;
     font-size: 26px;
+}
+td[style='background: blue;'] {
+    border-top: 0px !important;
+    border-bottom: 0px !important;
+}
+.main table tr td {
+    border: 1px solid white;
 }
