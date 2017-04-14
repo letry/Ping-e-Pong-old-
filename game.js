@@ -25,6 +25,8 @@ let Walls = [], Balls = [], Users = [], Bonuses = [], contBonus, score = 0,
         }
     };
 
+const tbl = document.getElementsByTagName('table')[0];
+
 Array.prototype.deepRemove = function(elem) {
     
     var indx = this.indexOf(elem);
@@ -73,8 +75,7 @@ Object.defineProperties(Balls, {
                  this.length > 0;
                  --i) {
                 if (settings.theme == 'animate') {
-                    document.getElementsByTagName('table')[0]
-                        .removeChild(this[i].ball);
+                    tbl.removeChild(this[i].ball);
                 }
                 this[i].stop();
                 draw(this[i]._x, this[i]._y);
@@ -129,10 +130,10 @@ Object.defineProperties(Walls, {
         enumerable: false,
         get: function() {return 0},
         set: function(val) {
-            var emptyBlocks = $('td[col]:not([class],[style])'),
+            var emptyBlocks = tbl.querySelectorAll('tr:not([class]) td:not([class]):not([style])'),
                 randBlock = getRandom(0, emptyBlocks.length),
-                randX = +emptyBlocks[randBlock].attributes[0].value,
-                randY = +emptyBlocks[randBlock].parentNode.attributes[0].value.slice(1);
+                randX = emptyBlocks[randBlock].cellIndex,
+                randY = emptyBlocks[randBlock].parentElement.rowIndex - 1;
 
                 this.push( new Wall(val, randX, randY) );
                 ++statistic.totalWalls;
@@ -174,7 +175,7 @@ function Ball(spd, pwr, position, direction) {
             this.ball.src = 'img/Balls.png';
             this.ball.className = 'ball';
             this.ball.setAttribute('style', `top: ${pos.top}px; left: ${pos.left}px;`);
-            document.getElementsByTagName('table')[0].appendChild(this.ball);
+            tbl.appendChild(this.ball);
         }
         
         draw(position[1], position[0], color, 'border');
@@ -219,7 +220,9 @@ Ball.prototype.start = function intrval() {
     this._horiz ? this._x++ : this._x--;
     
     if (settings.theme == 'animate') {
-        let pos = $(`tr[row="a${this._y}"] td[col="${this._x}"]`).position();
+        let row = tbl.rows[this._y + 1],
+            cell = row.cells[this._x],
+            pos = cell ? cell.getBoundingClientRect() : null;
         if (pos) {
             $(this.ball).animate({top: pos.top, left: pos.left}, this.spd-50, 'linear');
         }
@@ -640,15 +643,15 @@ function draw(x, y, col, cls){
     }
 
     function drawBlock(x, y) {
+        let blk = tbl.rows[y+1].cells[x];
         
-        var blk = $('tr[row="a'+ y +'"] > td[col="'+ x +'"]');
+        if (blk) {
+            if (cls) blk.classList.add(cls);
+            else blk.classList.remove('border');
 
-        if (cls) blk.addClass(cls);
-        else blk.removeClass('border');
-        
-        if (col) blk.css({background: col});
-        else blk.removeAttr('style');
-
+            if (col) blk.setAttribute('style', `background: ${col};`);
+            else blk.removeAttribute('style');
+        }
     } 
 }
 
@@ -783,9 +786,11 @@ function checkBlock(y, x, pwr) {
             return;
         }
     }
-
-    if ( !$('tr').is('[row="a'+ y +'"]') ||
-        $('tr[row="a'+ y +'"] > td[col="'+ x +'"]').hasClass('border')) {
+    
+    let row = tbl.rows[y + 1],
+        cell = row ? row.cells[x] : null;
+    
+    if ( !row.matches('[row="a'+ y +'"]') || cell.classList.contains('border')) {
              
         //Удар стены
         !function WallHit(Walls) {
@@ -808,7 +813,7 @@ function checkBlock(y, x, pwr) {
         
         return true;
         
-    } else if (settings.bonuses && !pwr && $('tr[row="a'+ y +'"] > td[col="'+ x +'"]').attr('style') ) {
+    } else if (settings.bonuses && !pwr && cell.hasAttribute('style') ) {
         var part = x > settings.width / 2 ? 1 : 0; 
         Bonus.activate(x, y, part);
     }
