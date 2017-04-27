@@ -96,8 +96,10 @@ Object.defineProperties(Balls, {
         enumerable: false,
         get: function() {return 0},
         set: function(val) {
-            for (let i = 0; i < this.length ; ++i) {
-                this[i].pwr += val;
+            for (let i = 0; i < this.length ; ++i) {console.log(this[i].pwr)
+                if (this[i].pwr > 1 || val > 0) {
+                    this[i].pwr += val;
+                }
             }
         }
     },
@@ -222,9 +224,13 @@ Ball.prototype.start = function intrval() {
     if (settings.theme == 'animate') {
         let row = tbl.rows[this._y + 1],
             cell = row.cells[this._x],
-            pos = cell ? cell.getBoundingClientRect() : null;
+            pos = cell ? {
+                left : cell.offsetLeft,
+                top: cell.offsetTop + cell.clientHeight
+            } : null;
+        
         if (pos) {
-            $(this.ball).animate({top: pos.top, left: pos.left}, this.spd-50, 'linear');
+            $(this.ball).animate(pos, this.spd-50, 'linear');
         }
     }
     
@@ -419,7 +425,9 @@ Shield.prototype.move = function(dir) {
         setTimeout(() => this._ready = true, this.speed);
     }
     function isntPzone(x, y) {
-        return !$('tr[row="a'+ y +'"] > td[col="'+ x +'"]').hasClass('playZone');
+        var row = tbl.rows[y+1],
+            cell = row.cells[x];
+        return !cell.classList.contains('playZone');
     }
 }
 Shield.prototype.resize = function(up) {
@@ -478,8 +486,7 @@ if (settings.bonuses) {
     );
 
     contBonus[3].push(
-        new BonusClass('Set', 'create'),
-        new BonusClass('Delete', 'clear')
+        new BonusClass('Set', 'create')
     );
     
     contBonus[4].push(
@@ -500,7 +507,6 @@ if (settings.bonuses) {
         contBonus[0][3],
         contBonus[0][4],
         contBonus[3][0],
-        contBonus[3][1],
         contBonus[4][0],
         contBonus[4][1]
     ], 1)
@@ -643,7 +649,8 @@ function draw(x, y, col, cls){
     }
 
     function drawBlock(x, y) {
-        let blk = tbl.rows[y+1].cells[x];
+        let row = tbl.rows[y+1],
+            blk = row ? row.cells[x] : null;
         
         if (blk) {
             if (cls) blk.classList.add(cls);

@@ -52,6 +52,7 @@ fieldset .inputWrap input, select{
 
 .main table {
     border-collapse: collapse;
+    position: relative;
 }
 
 .main table td, .ball {
@@ -91,10 +92,14 @@ footer {
 .statistic {
     display: none;
     background: grey;
-    max-width: 50%;
+    width: 50%;
     margin: 0 auto;
     font-size: 20px;
     padding: 2%;
+    position: fixed;
+    left: 50%;
+    top: 9%;
+    transform: translateX(-50%);
 }
 .statistic p {
     border-bottom: 1px dashed;

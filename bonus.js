@@ -7,12 +7,11 @@ function Bonus(x, y, conf) {
     this.x = x;
     this.y = y;
     
-    $('tr[row="a'+y+'"] > td[col="'+x+'"]')
-    .css({
-        'background':this._bgs,
-        'background-size': 'cover',
-        'background-repeat': 'round'
-    });
+    let blk = tbl.rows[y+1].cells[x];
+    
+    blk.style.background = this._bgs;
+    blk.style.backgroundSize = 'cover';
+    blk.style.backgroundRepeat = 'round';
     
     function getBackgrounds(cls) {
         var clas = [];
@@ -23,6 +22,8 @@ function Bonus(x, y, conf) {
     }
 }
 Bonus.prototype.activate = function(part) {
+    Bonuses.deepRemove(this);
+    
     let val = this._val,
         target = val[2];
         
@@ -40,17 +41,16 @@ Bonus.activate = function (x, y, part) {
     Bonuses.forEach(function(item, i) {
         if (item.x == x && item.y == y) {
             item.activate(part);
-            Bonuses.splice(i, 1);
             ++statistic.activBonuses;
         }
     });
 }
 
 Bonus.runCreater = function bonusCreater () {
-    let playZoneBlocks = $('td[class="playZone"]'),
+    let playZoneBlocks = tbl.querySelectorAll('td[class="playZone"]:not([style])'),
         randBlock = getRandom(0, playZoneBlocks.length),
-        randX = +playZoneBlocks[randBlock].attributes[0].value,
-        randY = +playZoneBlocks[randBlock].parentNode.attributes[0].value.slice(1),
+        randX = +playZoneBlocks[randBlock].cellIndex,
+        randY = +playZoneBlocks[randBlock].parentElement.rowIndex-1,
         
         randClass = getRandom(0, [contBonus.length]),
         randType =  getRandom(0, [contBonus[randClass].length] ),
@@ -66,8 +66,12 @@ Bonus.stopCreater = function () {
 }
 
 Bonus.clear = function() {
-    $('.main table td[style *= "png"]').removeAttr('style');
-    Bonuses = [];
+    let bonusBlocks = tbl.querySelectorAll('td[style *= "png"]');
+    
+    [].forEach.call(bonusBlocks, (item) => {
+        item.removeAttribute('style');
+    });
+    Bonuses.length = 0;
 }
 
 
